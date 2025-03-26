@@ -1,0 +1,32 @@
+/**
+ * @file        main.c
+ * @author      Karim Vergnes <me@thesola.io>
+ * @copyright   GPLv2
+ * @brief       xdelta patch application module for UMD games
+ *
+ * This module intercepts read commands from UMD, and selectively replaces them
+ * with contents from a given xdelta file.
+ * This allows patches such as translations to be applied to physical media
+ * without requiring a dump.
+ */
+
+#include <pspkernel.h>
+#include <string.h>
+
+PSP_MODULE_INFO("umd_xdelta", PSP_MODULE_KERNEL, 0, 8);
+
+int module_found = 0;
+int loader_found = 0;
+
+#define MAX_MODULE_NUMBER 256
+
+
+int module_start(SceSize argc, void *argp)
+{
+    kprintf("------------------\nUMD-xdelta starting...\n");
+#ifdef CUSTOM_PATH
+    get_plugin_path(argp);
+#endif
+}
+
+// vim: ft=c.doxygen
