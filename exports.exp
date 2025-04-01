@@ -1,0 +1,22 @@
+# Define the exports for the prx
+PSP_BEGIN_EXPORTS
+
+PSP_EXPORT_START(syslib, 0, 0x8000)
+PSP_EXPORT_FUNC_HASH(module_start)
+PSP_EXPORT_FUNC_HASH(module_stop)
+PSP_EXPORT_VAR_HASH(module_info)
+PSP_EXPORT_END
+
+# Voluntary collision with Inferno to prevent conflicts
+PSP_EXPORT_START(inferno_driver, 0x0011, 0x0001)
+# inferno_driver_CF8299BE
+PSP_EXPORT_FUNC(infernoSetDiscType)
+# inferno_driver_C0736FD6
+PSP_EXPORT_FUNC(infernoCacheSetPolicy)
+# inferno_driver_8CDE7F95
+PSP_EXPORT_FUNC(infernoCacheInit)
+# inferno_driver_B6522E93
+PSP_EXPORT_FUNC(infernoSetUmdDelay)
+PSP_EXPORT_END
+
+PSP_END_EXPORTS

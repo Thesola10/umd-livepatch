@@ -1,14 +1,33 @@
-TARGET = xdelta_umd
-OBJS = main.o
-LIBS =
-CFLAGS = -O2 -G0 -Wall -std=c99 -DCUSTOM_PATH
-# -DKPRINTF_ENABLED
-CXXFLAGS = $(CFLAGS)
-ASFLAGS = $(CFLAGS)
+TARGET = umd_livepatch
+C_OBJS = main.o
+OBJS = $(C_OBJS) imports.o
+all: $(TARGET).prx
+INCDIR = $(ARKROOT)/common/include $(ARKROOT)/core/systemctrl/include
+CFLAGS = -std=c99 -Os -G0 -Wall
 
-USE_KERNEL_LIBC = 1
-USE_KERNEL_LIBS = 1
+ifdef DEBUG
+CFLAGS += -DDEBUG=$(DEBUG)
+endif
 
-PSP_FW_VERSION = 500
+LDFLAGS =  -nostartfiles -L .
+LIBS = -lpspsystemctrl_kernel
+
+PSP_FW_VERSION = 660
+
+PRX_EXPORTS = exports.exp
+
+BUILD_PRX=1
+USE_KERNEL_LIBS=1
+USE_KERNEL_LIBC=1
+
+include $(ARKROOT)/common/make/global.mak
 PSPSDK = $(shell psp-config --pspsdk-path)
-include $(PSPSDK)/lib/build_prx.mak
+
+libpspsystemctrl_kernel.a:
+	$(MAKE) -C $(ARKROOT)/libs/SystemCtrlForKernel
+	cp $(ARKROOT)/libs/SystemCtrlForKernel/libpspsystemctrl_kernel.a .
+
+$(TARGET).prx:: libpspsystemctrl_kernel.a
+
+include $(PSPSDK)/lib/build.mak
+include $(ARKROOT)/common/make/beauty.mak

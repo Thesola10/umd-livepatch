@@ -29,4 +29,15 @@ int module_start(SceSize argc, void *argp)
 #endif
 }
 
+int module_stop(void)
+{
+    Kprintf("Unloading UMD Livepatch.");
+}
+
+
+void infernoSetDiscType(void) {}
+void infernoCacheSetPolicy(void) {}
+void infernoCacheInit(void) {}
+void infernoSetUmdDelay(void) {}
+
 // vim: ft=c.doxygen
