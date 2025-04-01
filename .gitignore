@@ -3,3 +3,4 @@ PARAM.SFO
 *.o
 *.elf
 *.prx
+*.a

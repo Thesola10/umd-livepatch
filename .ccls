@@ -1,2 +1,11 @@
 gcc
+-I/home/karim/GitRepos/ARK-4/common/include
+-I/home/karim/GitRepos/ARK-4/core/systemctrl/include
+-I/usr/local/pspdev/psp/include
 -I/usr/local/pspdev/psp/sdk/include
+-I.
+-std=c99
+-Os
+-G0
+-D_PSP_FW_VERSION=660
+-D__CCLS__
