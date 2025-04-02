@@ -10,14 +10,13 @@
  * without requiring a dump.
  */
 
-#include <pspkernel.h>
-#include <systemctrl.h>
+#include "io_funcs.h"
 #include <string.h>
 
 PSP_MODULE_INFO("umd_livepatch", PSP_MODULE_KERNEL, 2, 1);
 
-int module_found = 0;
-int loader_found = 0;
+
+void lp_patchFunction(u32 addr, void *newaddr, void *fptr);
 
 PspIoDrvFuncs reserveUmdFuncs;
 
@@ -42,7 +41,6 @@ PspIoDrv patchedUmdDriver = {
 };
 
 #define MAX_MODULE_NUMBER 256
-
 
 // Bogus read to test intercepting
 static int patched_IoRead(PspIoDrvFileArg *arg, char *data, int len)
@@ -73,23 +71,9 @@ int module_start(SceSize argc, void *argp)
 
     patchedUmdFuncs = reserveUmdFuncs;
 
-    patchedUmdFuncs.IoRead = &patched_IoRead;
+    umdDriver->funcs->IoRead = patched_IoRead;
+    umdDriver->funcs->IoDevctl = patched_IoDevctl;
 
-    if (ret = sceIoAddDrv(&reserveUmdDriver)) {
-        Kprintf("Reserve failed: 0x%08x\n", ret);
-        return ret;
-    } else {
-        Kprintf("Reserved previous UMD driver!\n");
-    }
-
-    sceIoDelDrv("umd");
-
-    if (ret = sceIoAddDrv(&patchedUmdDriver)) {
-        Kprintf("Install failed: 0x%08x\n", ret);
-        return ret;
-    } else {
-        Kprintf("Installed our own UMD driver!\n");
-    }
     return 0;
 }
 
@@ -100,7 +84,7 @@ int module_stop(void)
 
     sceIoAddDrv(&originalUmdDriver);
     sceIoDelDrv("umdraw");
-    Kprintf("Restored original UMD driver.\n");
+    Kprintf("Restored original UMD driver\n");
     return 0;
 }
 
