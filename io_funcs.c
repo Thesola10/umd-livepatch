@@ -1,3 +1,13 @@
+/**
+ * @file        io_funcs.c
+ * @author      Karim Vergnes <me@thesola.io>
+ * @copyright   GPLv2
+ * @brief       Functions to interpose with UMD driver
+ *
+ * Functions to parse and manipulate devctl requests to the UMD driver,
+ * allowing for live redirection of read requests to a patch file.
+ */
+
 #include "io_funcs.h"
 #include <string.h>
 
@@ -9,8 +19,13 @@ static char first_read = 1;
 
 static char hdr[ISO_SECTOR_SIZE];
 
+/**
+ * @brief       Convert layout-based address (LBA) to an absolute offset.
+ *
+ * @param param The LBA parameter data, as obtained from a read devctl.
+ */
 static inline u32
-_impl_lp_lbaToAddr(struct LbaParams *param)
+_impl_lp_UmdLba_toAddr(lp_UmdLba *param)
 {
     u32 offset;
 
@@ -27,12 +42,21 @@ _impl_lp_lbaToAddr(struct LbaParams *param)
     return offset;
 }
 
+/**
+ * @brief      Read the header sector for the disc to memory.
+ *
+ * This function is meant to be read in response to an existing read devctl.
+ * The parameters below should be patched through from a previous devctl call.
+ *
+ * @param arg      The devctl file argument to be passed through to the driver.
+ * @param devname  The device name argument to be passed through to the driver.
+ */
 static inline int
 _impl_lp_readDiscHeader(PspIoDrvFileArg *arg, const char *devname)
 {
     int ret;
 
-    struct LbaParams param = {
+    lp_UmdLba param = {
         .unknown1 = 0,
         .cmd = 0, /* read */
         .lba_top = 0x8000 / ISO_SECTOR_SIZE,
@@ -48,13 +72,26 @@ _impl_lp_readDiscHeader(PspIoDrvFileArg *arg, const char *devname)
     return ret;
 }
 
-
+/**
+ * @brief      The effective low-level read command.
+ *
+ * This function is called whenever a devctl to read data off disc is
+ * intercepted. All parameters are provided from the {@ref PspIoDrvFuncs::IoDevctl}
+ * function call made by the caller, to allow seamless passthrough to the
+ * original driver.
+ *
+ * @param param    The parsed {@ref lp_UmdLba} layout-based address.
+ * @param outdata  The memory address where read data is expected.
+ * @param outlen   The amount of data expected to be read.
+ *
+ * @see _impl_lp_lbaToAddr to convert the LBA into an absolute bytes offset.
+ */
 static int
 _impl_lp_devctlRead(PspIoDrvFileArg *arg, const char *devname,
-                    unsigned int cmd, struct LbaParams *param, int inlen,
+                    unsigned int cmd, lp_UmdLba *param, int inlen,
                     void *outdata, int outlen)
 {
-    u32 offset = _impl_lp_lbaToAddr(param);
+    u32 offset = _impl_lp_UmdLba_toAddr(param);
     int ret;
 
     if (first_read) {
@@ -83,7 +120,7 @@ patched_IoDevctl(PspIoDrvFileArg *arg, const char *devname,
     case lp_UmdIoctl_READ_GENERAL:
     case lp_UmdIoctl_READ_CACHE:
     case lp_UmdIoctl_READ_SECTORS:
-        return _impl_lp_devctlRead(arg, devname, cmd, (struct LbaParams *) indata,
+        return _impl_lp_devctlRead(arg, devname, cmd, (lp_UmdLba *) indata,
                                    inlen, outdata, outlen);
     default:
         goto passthru;
@@ -92,3 +129,5 @@ patched_IoDevctl(PspIoDrvFileArg *arg, const char *devname,
 passthru:
     return reserveUmdFuncs.IoDevctl(arg, devname, cmd, indata, inlen, outdata, outlen);
 }
+
+// vim: ft=c.doxygen

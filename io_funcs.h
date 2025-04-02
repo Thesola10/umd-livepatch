@@ -1,6 +1,16 @@
 #ifndef __IO_FUNCS_H
 #define __IO_FUNCS_H
 
+/**
+ * @file        io_funcs.c
+ * @author      Karim Vergnes <me@thesola.io>
+ * @copyright   GPLv2
+ * @brief       Functions to interpose with UMD driver
+ *
+ * Functions to parse and manipulate devctl requests to the UMD driver,
+ * allowing for live redirection of read requests to a patch file.
+ */
+
 #include <pspkernel.h>
 #include <systemctrl.h>
 
@@ -44,7 +54,7 @@ typedef enum: int {
     lp_UmdIoctl_GET_INFO     = 0x01E38012
 } lp_UmdIoctl;
 
-struct LbaParams {
+typedef struct {
     int unknown1; // 0
     int cmd; // 4
     int lba_top; // 8
@@ -53,13 +63,24 @@ struct LbaParams {
     int byte_size_centre; // 20
     int byte_size_start; // 24
     int byte_size_last;  // 28
-};
+} lp_UmdLba;
 
 #define ISO_SECTOR_SIZE 2048
 
+/**
+ * @brief      Replacement handler for UMD devctl.
+ *
+ * This function is called as a replacement for the UMD driver's devctl handler.
+ * Contrary to Inferno2, we have a backing driver to which any unrecognized or
+ * irrelevant devctls should be passed through.
+ *
+ * @see _impl_lp_devctlRead which handles reading data from disc.
+ */
 int
 patched_IoDevctl(PspIoDrvFileArg *arg, const char *devname,
                  unsigned int cmd, void *indata, int inlen,
                  void *outdata, int outlen);
 
 #endif //__IO_FUNCS_H
+
+// vim: ft=c.doxygen
