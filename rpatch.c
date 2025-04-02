@@ -1,8 +1,6 @@
 #include "io_funcs.h"
 #include "rpatch.h"
 
-#include <prototab.h>
-
 int
 lp_PatchSet_open(const char *path)
 {

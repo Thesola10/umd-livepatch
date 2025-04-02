@@ -1,7 +1,3 @@
-
-LIBRSYNC := librsync
-CMAKE := psp-cmake
-
 TARGET = umd_livepatch
 C_OBJS = io_funcs.o main.o
 OBJS = $(C_OBJS) imports.o
@@ -14,7 +10,7 @@ CFLAGS += -DDEBUG=$(DEBUG)
 endif
 
 LDFLAGS =  -nostartfiles -L .
-LIBS = -lpspsystemctrl_kernel -lrsync
+LIBS = -lpspsystemctrl_kernel
 
 PSP_FW_VERSION = 660
 
@@ -30,15 +26,6 @@ PSPSDK = $(shell psp-config --pspsdk-path)
 libpspsystemctrl_kernel.a:
 	$(MAKE) -C $(ARKROOT)/libs/SystemCtrlForKernel
 	cp $(ARKROOT)/libs/SystemCtrlForKernel/libpspsystemctrl_kernel.a .
-
-librsync:
-	git clone https://github.com/librsync/librsync
-
-librsync.a: $(LIBRSYNC)
-	mkdir rsync_build
-	cd rsync_build; $(CMAKE) $(shell realpath $(LIBRSYNC)); make
-	mv rsync_build/librsync.a .
-	rm -rf rsync_build
 
 $(TARGET).prx:: libpspsystemctrl_kernel.a
 
