@@ -4,3 +4,4 @@ PARAM.SFO
 *.elf
 *.prx
 *.a
+librsync

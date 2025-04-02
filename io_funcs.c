@@ -28,7 +28,7 @@ _impl_lp_lbaToAddr(struct LbaParams *param)
 }
 
 static inline int
-_impl_lp_readDiscHeader(PspIoDrvFileArg *arg, const char *devname, void *outdata)
+_impl_lp_readDiscHeader(PspIoDrvFileArg *arg, const char *devname)
 {
     int ret;
 
@@ -44,7 +44,7 @@ _impl_lp_readDiscHeader(PspIoDrvFileArg *arg, const char *devname, void *outdata
     };
 
     ret = reserveUmdFuncs.IoDevctl(arg, devname, lp_UmdIoctl_READ_SECTORS,
-                                   &param, sizeof param, outdata, ISO_SECTOR_SIZE);
+                                   &param, sizeof param, &hdr, ISO_SECTOR_SIZE);
     return ret;
 }
 
@@ -60,7 +60,7 @@ _impl_lp_devctlRead(PspIoDrvFileArg *arg, const char *devname,
     if (first_read) {
         ret = reserveUmdFuncs.IoDevctl(arg, devname, cmd, param, inlen, outdata, outlen);
 
-        _impl_lp_readDiscHeader(arg, devname, &hdr);
+        _impl_lp_readDiscHeader(arg, devname);
         strncpy(umd_id, hdr + 0x373, 10);
         umd_id[10] = 0;
         Kprintf("Disc ID obtained: '%s'\n", umd_id);

@@ -4,6 +4,7 @@ gcc
 -I/usr/local/pspdev/psp/include
 -I/usr/local/pspdev/psp/sdk/include
 -I.
+-I./librsync/src
 -std=c99
 -Os
 -G0
