@@ -67,7 +67,7 @@ _impl_lp_readDiscHeader(PspIoDrvFileArg *arg, const char *devname)
         .byte_size_last = 0
     };
 
-    ret = reserveUmdFuncs.IoDevctl(arg, devname, lp_UmdIoctl_READ_SECTORS,
+    ret = reserveUmdFuncs.IoDevctl(arg, devname, lp_UmdDevctl_READ_SECTORS,
                                    &param, sizeof param, &hdr, ISO_SECTOR_SIZE);
     return ret;
 }
@@ -116,10 +116,10 @@ patched_IoDevctl(PspIoDrvFileArg *arg, const char *devname,
                  unsigned int cmd, void *indata, int inlen,
                  void *outdata, int outlen)
 {
-    switch ((lp_UmdIoctl) cmd) {
-    case lp_UmdIoctl_READ_GENERAL:
-    case lp_UmdIoctl_READ_CACHE:
-    case lp_UmdIoctl_READ_SECTORS:
+    switch ((lp_UmdDevctl) cmd) {
+    case lp_UmdDevctl_READ_GENERAL:
+    case lp_UmdDevctl_READ_CACHE:
+    case lp_UmdDevctl_READ_SECTORS:
         return _impl_lp_devctlRead(arg, devname, cmd, (lp_UmdLba *) indata,
                                    inlen, outdata, outlen);
     default:
@@ -128,6 +128,27 @@ patched_IoDevctl(PspIoDrvFileArg *arg, const char *devname,
 
 passthru:
     return reserveUmdFuncs.IoDevctl(arg, devname, cmd, indata, inlen, outdata, outlen);
+}
+
+
+int
+patched_IoRead(PspIoDrvFileArg *arg, char *data, int len)
+{
+    Kprintf("Reading UMD data, hum dee dum...\n");
+    return reserveUmdFuncs.IoRead(arg, data, len);
+}
+
+int
+patched_IoOpen(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode)
+{
+    Kprintf("Opening UMD.\n");
+    return reserveUmdFuncs.IoOpen(arg, file, flags, mode);
+}
+
+void
+lp_pingDiscRemoved(void)
+{
+    first_read = 1;
 }
 
 // vim: ft=c.doxygen

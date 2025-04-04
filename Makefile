@@ -10,7 +10,7 @@ CFLAGS += -DDEBUG=$(DEBUG)
 endif
 
 LDFLAGS =  -nostartfiles -L .
-LIBS = -lpspsystemctrl_kernel
+LIBS = -lpspsystemctrl_kernel -lpspumd
 
 PSP_FW_VERSION = 660
 

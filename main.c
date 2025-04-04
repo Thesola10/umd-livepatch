@@ -12,46 +12,61 @@
 
 #include "io_funcs.h"
 #include <string.h>
+#include <pspumd.h>
 
 PSP_MODULE_INFO("umd_livepatch", PSP_MODULE_KERNEL, 2, 1);
 
 
 void lp_patchFunction(u32 addr, void *newaddr, void *fptr);
 
+PspIoDrv *umdDriver;
 PspIoDrvFuncs reserveUmdFuncs;
 
-PspIoDrvFuncs patchedUmdFuncs;
-
-PspIoDrv originalUmdDriver;
-
-PspIoDrv reserveUmdDriver = {
-    .name = "umdraw",
-    .dev_type = 4,
-    .unk2 = 0x800,
-    .name2 = "UMD_RAW",
-    .funcs = &reserveUmdFuncs
-};
-
-PspIoDrv patchedUmdDriver = {
-    .name = "umd",
-    .dev_type = 4, // block device
-    .unk2 = 0x800,
-    .name2 = "UMD9660",
-    .funcs = &patchedUmdFuncs
-};
+SceUID vshCallbackId = 0;
+SceUID umdCallbackId;
+SceUID umdCallbackThread;
 
 #define MAX_MODULE_NUMBER 256
 
-// Bogus read to test intercepting
-static int patched_IoRead(PspIoDrvFileArg *arg, char *data, int len)
+
+
+int lp_discChangeCallback(int unk, int event, void *data)
 {
-    Kprintf("Reading UMD data, hum dee dum...\n");
-    return reserveUmdFuncs.IoRead(arg, data, len);
+    if (event == PSP_UMD_NOT_PRESENT)
+        lp_pingDiscRemoved();
+    if (vshCallbackId)
+        sceKernelNotifyCallback(vshCallbackId, event);
+    return 0;
+}
+
+
+int lp_discChangeWatcher(SceSize argc, void *argp)
+{
+    SceUID callbacks[50];
+    int count;
+    SceKernelCallbackInfo cbinfo;
+
+    sceKernelGetThreadmanIdList(SCE_KERNEL_TMID_Callback, callbacks, 50, &count);
+
+    for (int i = 0; i < count; i++) {
+        sceKernelReferCallbackStatus(callbacks[i], &cbinfo);
+        if (!strcmp(cbinfo.name, "SceVshMediaDetectUMD")) {
+            Kprintf("Found VSH UMD callback: 0x%08x\n", vshCallbackId);
+            vshCallbackId = callbacks[i];
+            break;
+        }
+    }
+
+    umdCallbackId = sceKernelCreateCallback("lp_discChangeCallback",
+                                            lp_discChangeCallback,
+                                            NULL);
+    sceUmdRegisterUMDCallBack(umdCallbackId);
+
+    sceKernelSleepThreadCB();
 }
 
 int module_start(SceSize argc, void *argp)
 {
-    PspIoDrv *umdDriver = 0;
     int ret;
 
     Kprintf("------------------\nUMD Livepatch starting...\n");
@@ -61,7 +76,6 @@ int module_start(SceSize argc, void *argp)
 
     umdDriver = sctrlHENFindDriver("umd");
     if (umdDriver) {
-        originalUmdDriver = *umdDriver;
         reserveUmdFuncs = *umdDriver->funcs;
         Kprintf("Found UMD driver at 0x%08x\n", umdDriver);
     } else {
@@ -69,9 +83,13 @@ int module_start(SceSize argc, void *argp)
         return 1;
     }
 
-    patchedUmdFuncs = reserveUmdFuncs;
+    umdCallbackThread = sceKernelCreateThread("lp_discChangeWatcher",
+                                              lp_discChangeWatcher,
+                                              0x10, 0x1000, 0, NULL);
+    sceKernelStartThread(umdCallbackThread, 0, NULL);
 
     umdDriver->funcs->IoRead = patched_IoRead;
+    umdDriver->funcs->IoOpen = patched_IoOpen;
     umdDriver->funcs->IoDevctl = patched_IoDevctl;
 
     return 0;
@@ -80,11 +98,16 @@ int module_start(SceSize argc, void *argp)
 int module_stop(void)
 {
     Kprintf("Unloading UMD Livepatch.");
-    sceIoDelDrv("umd");
 
-    sceIoAddDrv(&originalUmdDriver);
-    sceIoDelDrv("umdraw");
-    Kprintf("Restored original UMD driver\n");
+    *umdDriver->funcs = reserveUmdFuncs;
+    Kprintf("Restored original UMD driver functions.\n");
+
+    sceUmdUnRegisterUMDCallBack(umdCallbackId);
+    sceKernelDeleteCallback(umdCallbackId);
+
+    if (vshCallbackId)
+        sceUmdRegisterUMDCallBack(vshCallbackId);
+    Kprintf("Disconnected drive state callback.\n");
     return 0;
 }
 

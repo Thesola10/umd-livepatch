@@ -7,7 +7,7 @@ PSP_EXPORT_FUNC_HASH(module_stop)
 PSP_EXPORT_VAR_HASH(module_info)
 PSP_EXPORT_END
 
-# Voluntary collision with Inferno to prevent conflicts
+# Voluntary collision with Inferno to prevent loading
 PSP_EXPORT_START(inferno_driver, 0x0011, 0x0001)
 # inferno_driver_CF8299BE
 PSP_EXPORT_FUNC(infernoSetDiscType)
@@ -17,6 +17,11 @@ PSP_EXPORT_FUNC(infernoCacheSetPolicy)
 PSP_EXPORT_FUNC(infernoCacheInit)
 # inferno_driver_B6522E93
 PSP_EXPORT_FUNC(infernoSetUmdDelay)
+PSP_EXPORT_END
+
+PSP_EXPORT_START(umd_livepatch, 0x0011, 0x0001)
+PSP_EXPORT_FUNC(lp_discChangeCallback)
+PSP_EXPORT_FUNC(lp_discChangeWatcher)
 PSP_EXPORT_END
 
 PSP_END_EXPORTS

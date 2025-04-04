@@ -28,31 +28,38 @@
  */
 
 typedef enum: int {
-    lp_UmdIoctl_01F00003  = 0x01F00003,
-    lp_UmdIoctl_01F010DB  = 0x01F010DB,
-
-    lp_UmdIoctl_DISC_TYPE = 0x01F20001,
-    lp_UmdIoctl_SEEK_RAW  = 0x01F100A3,
-    lp_UmdIoctl_CACHE_ADD  = 0x01F100A4,
-    lp_UmdIoctl_CACHE_ADD2 = 0x01F300A5,
-
-    /* Cache control, worth intercepting */
-    lp_UmdIoctl_01F300A7  = 0x01F300A7,
-    lp_UmdIoctl_01F300A8  = 0x01F300A8,
-    lp_UmdIoctl_01F300A9  = 0x01F300A9,
-    lp_UmdIoctl_NUM_SECTORS  = 0x01F20002,
-    lp_UmdIoctl_NUM_SECTORS2 = 0x01F20003,
-    lp_UmdIoctl_01E18030  = 0x01E18030,
-    lp_UmdIoctl_01E180D3  = 0x01E180D3,
-    lp_UmdIoctl_01E080A8  = 0x01E080A8,
-    lp_UmdIoctl_GET_SECTOR_BUF = 0x01E28035,
-    lp_UmdIoctl_GET_SECTOR_SIZE = 0x01E280A9,
-    lp_UmdIoctl_01E38034  = 0x01E38034,
-    lp_UmdIoctl_READ_GENERAL = 0x01E380C0,
-    lp_UmdIoctl_READ_SECTORS = 0x01F200A1,
-    lp_UmdIoctl_READ_CACHE   = 0x01F200A2,
-    lp_UmdIoctl_GET_INFO     = 0x01E38012
+    lp_UmdIoctl_01F010DB   = 0x01F010DB,
+    lp_UmdIoctl_GET_OFFSET = 0x01D20001,
+    lp_UmdIoctl_LSEEK      = 0x01F100A6,
+    lp_UmdIoctl_READ       = 0x01F30003
 } lp_UmdIoctl;
+
+typedef enum: int {
+    lp_UmdDevctl_01F00003  = 0x01F00003,
+    lp_UmdDevctl_01F010DB  = 0x01F010DB,
+
+    lp_UmdDevctl_DISC_TYPE = 0x01F20001,
+    lp_UmdDevctl_SEEK_RAW  = 0x01F100A3,
+    lp_UmdDevctl_CACHE_ADD  = 0x01F100A4,
+    lp_UmdDevctl_CACHE_ADD2 = 0x01F300A5,
+
+    /* CacDev control, worth intercepting */
+    lp_UmdDevctl_01F300A7  = 0x01F300A7,
+    lp_UmdDevctl_01F300A8  = 0x01F300A8,
+    lp_UmdDevctl_01F300A9  = 0x01F300A9,
+    lp_UmdDevctl_NUM_SECTORS  = 0x01F20002,
+    lp_UmdDevctl_NUM_SECTORS2 = 0x01F20003,
+    lp_UmdDevctl_01E18030  = 0x01E18030,
+    lp_UmdDevctl_01E180D3  = 0x01E180D3,
+    lp_UmdDevctl_01E080A8  = 0x01E080A8,
+    lp_UmdDevctl_GET_SECTOR_BUF = 0x01E28035,
+    lp_UmdDevctl_GET_SECTOR_SIZE = 0x01E280A9,
+    lp_UmdDevctl_01E38034  = 0x01E38034,
+    lp_UmdDevctl_READ_GENERAL = 0x01E380C0,
+    lp_UmdDevctl_READ_SECTORS = 0x01F200A1,
+    lp_UmdDevctl_READ_CACHE   = 0x01F200A2,
+    lp_UmdDevctl_GET_INFO     = 0x01E38012
+} lp_UmdDevctl;
 
 typedef struct {
     int unknown1; // 0
@@ -80,6 +87,23 @@ int
 patched_IoDevctl(PspIoDrvFileArg *arg, const char *devname,
                  unsigned int cmd, void *indata, int inlen,
                  void *outdata, int outlen);
+
+int
+patched_IoRead(PspIoDrvFileArg *arg, char *data, int len);
+
+int
+patched_IoOpen(PspIoDrvFileArg *arg, char *file, int flags, SceMode mode);
+
+/**
+ * @brief      Tell this module to expect a new disc.
+ *
+ * This function resets the "first read" flag which prompts this module to read
+ * the UMD's disc ID.
+ * On its own, this function does not invalidate the cache. It will only be
+ * invalidated if the effective disc ID has changed on the next read devctl.
+ */
+void
+lp_pingDiscRemoved(void);
 
 #endif //__IO_FUNCS_H
 
