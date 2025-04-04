@@ -2,7 +2,7 @@
 #define __IO_FUNCS_H
 
 /**
- * @file        io_funcs.c
+ * @file        io_funcs.h
  * @author      Karim Vergnes <me@thesola.io>
  * @copyright   GPLv2
  * @brief       Functions to interpose with UMD driver

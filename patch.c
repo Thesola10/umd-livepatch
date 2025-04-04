@@ -1,7 +1,7 @@
 #include "io_funcs.h"
 #include "patch.h"
 
-lp_UMDiffCommand cmd_buffer[1024];
+lp_UMDiffCommand cmd_buffer[CMD_BUFFER_SIZE];
 
 lp_UMDiffFile
 lp_PatchSet_open(const char *path)
