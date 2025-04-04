@@ -76,7 +76,7 @@ _impl_lp_readDiscHeader(PspIoDrvFileArg *arg, const char *devname)
  * @brief      The effective low-level read command.
  *
  * This function is called whenever a devctl to read data off disc is
- * intercepted. All parameters are provided from the {@ref PspIoDrvFuncs::IoDevctl}
+ * intercepted. All parameters are provided from the @ref PspIoDrvFuncs::IoDevctl
  * function call made by the caller, to allow seamless passthrough to the
  * original driver.
  *

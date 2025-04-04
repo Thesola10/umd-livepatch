@@ -40,7 +40,7 @@ u32 fn_RegisterUmdCallback;
  * wrongly patch a different disc, such as on VSH.
  *
  * This callback does two things, in order:
- * - Reset the first read flag by calling {@ref lp_pingDiscRemoved}
+ * - Reset the first read flag by calling @ref lp_pingDiscRemoved
  * - Call the 'guest callback', the callback that was originally meant to handle
  *   UMD drive events.
  *
@@ -82,8 +82,8 @@ int lp_catchUmdCallback(int cbid)
  * It performs the following tasks, in order:
  * - Look up a callback named "SceVshMediaDetectUMD" or "DVDUMD", and write it
  *   down as our guest callback.
- * - Register {@ref lp_discChangeCallback} as the UMD event callback.
- * - Redirect sceUmdRegisterUMDCallBack to {@ref lp_catchUmdCallback}, taking
+ * - Register @ref lp_discChangeCallback as the UMD event callback.
+ * - Redirect sceUmdRegisterUMDCallBack to @ref lp_catchUmdCallback, taking
  *   care to save the original instructions for cleanup.
  * - Go to sleep and wait for callbacks.
  */
