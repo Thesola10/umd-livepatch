@@ -1,5 +1,5 @@
 #include "io_funcs.h"
-#include "rpatch.h"
+#include "patch.h"
 
 lp_UMDiffCommand cmd_buffer[1024];
 

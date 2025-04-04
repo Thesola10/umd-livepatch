@@ -3,6 +3,8 @@ C_OBJS = main.o rdiff.o
 OBJS   = $(C_OBJS)
 
 CMAKE := cmake
+RAGEL := ragel
+DOCOPT2RAGEL := docopt2ragel
 
 LIBRSYNC_SOURCE := librsync
 
@@ -13,8 +15,14 @@ else
 	LIBS += -lrsync
 endif
 
-$(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+$(TARGET): $(OBJS) usage.rl.h
+	$(CC) -o $@ $(OBJS) $(CFLAGS) $(LIBS)
+
+usage.rl: USAGE
+	$(DOCOPT2RAGEL) USAGE > $@
+
+%.rl.h: %.rl
+	$(RAGEL) $< -o $@
 
 librsync:
 	git clone https://github.com/librsync/librsync
@@ -25,3 +33,8 @@ librsync.a: $(LIBRSYNC_SOURCE)
 	mv librsync.build/librsync.a .
 	rm -rf librsync.build
 
+
+clean:
+	rm -rf librsync $(OBJS) *.rl $(TARGET)
+
+.PHONY: clean

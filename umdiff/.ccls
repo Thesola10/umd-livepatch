@@ -1,0 +1,3 @@
+gcc
+-I./librsync/src
+-D__CCLS__

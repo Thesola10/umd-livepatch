@@ -1,0 +1,10 @@
+umdiff - Generate patch files for use with umd-livepatch
+
+Usage:
+  umdiff delta <source_file> <target_file> <output_file>
+  umdiff patch <source_file> <umdiff_file> <output_file>
+  umdiff from-rdiff <rdiff_file> <output_file>
+  umdiff --help
+
+Options:
+  -h --help  Prints a short usage summary.

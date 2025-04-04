@@ -1,9 +1,9 @@
-#ifndef __RPATCH_H
-#define __RPATCH_H
+#ifndef __PATCH_H
+#define __PATCH_H
 
 #include "umdiff/umdiff.h"
 
 int
 lp_loadCmdsForIndex(long sector);
 
-#endif //__RPATCH_H
+#endif //__PATCH_H

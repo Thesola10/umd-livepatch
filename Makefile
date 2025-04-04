@@ -1,5 +1,5 @@
 TARGET = umd_livepatch
-C_OBJS = io_funcs.o main.o
+C_OBJS = patch.o io_funcs.o main.o
 OBJS = $(C_OBJS) imports.o
 all: $(TARGET).prx
 INCDIR = $(ARKROOT)/common/include $(ARKROOT)/core/systemctrl/include $(LIBRSYNC)/src
