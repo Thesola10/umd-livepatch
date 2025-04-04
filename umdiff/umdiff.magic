@@ -1,0 +1,6 @@
+# umdiff:  file(1) magic for UMDiff format
+# URL:          https://github.com/thesola10/umd-livepatch
+0       string  \x7fUMDiff  UMDiff patch file
+>0x07   byte    0           v0,
+>>0x08  belong  x           %d commands,
+>>0x0c  belong  x           data starts at offset %d

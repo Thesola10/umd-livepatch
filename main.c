@@ -70,6 +70,8 @@ int lp_catchUmdCallback(int cbid)
     Kprintf("Caught request to register UMD callback 0x%08x\n", cbid);
     vshCallbackId = cbid;
     sceKernelNotifyCallback(cbid, PSP_UMD_NOT_PRESENT);
+
+    return 0;
 }
 
 /**
@@ -120,8 +122,9 @@ int lp_discChangeWatcher(SceSize argc, void *argp)
         REDIRECT_FUNCTION(fn_RegisterUmdCallback, lp_catchUmdCallback);
     }
 
-
     sceKernelSleepThreadCB();
+
+    return 1; // This should be unreachable
 }
 
 int module_start(SceSize argc, void *argp)
@@ -163,6 +166,8 @@ int module_stop(void)
 
     sceUmdUnRegisterUMDCallBack(umdCallbackId);
     sceKernelDeleteCallback(umdCallbackId);
+
+    sceKernelDeleteThread(umdCallbackThread);
 
     // put things back where we found them
     _sw((u32) &reserveRegisterUmdCallback, fn_RegisterUmdCallback);
