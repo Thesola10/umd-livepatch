@@ -11,6 +11,24 @@
 
 #include "usage.rl.h"
 
+int
+umdiff_delta(char *source, char *target, char *output)
+{
+    return 1;
+}
+
+int
+umdiff_patch(char *source, char *umdiff, char *output)
+{
+    return 1;
+}
+
+int
+umdiff_fromRdiff(char *rdiff, char *output)
+{
+    return 1;
+}
+
 int main(int argc, char *argv[])
 {
     int res;
@@ -24,6 +42,13 @@ int main(int argc, char *argv[])
         show_usage();
         return 0;
     }
+
+    if (opts.delta)
+        return umdiff_delta(opts.source_file, opts.target_file, opts.output_file);
+    else if (opts.patch)
+        return umdiff_patch(opts.source_file, opts.umdiff_file, opts.output_file);
+    else if (opts.fromrdiff)
+        return umdiff_fromRdiff(opts.rdiff_file, opts.output_file);
 
     return 1;
 }

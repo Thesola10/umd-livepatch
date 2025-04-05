@@ -1,16 +1,16 @@
 #include "io_funcs.h"
 #include "patch.h"
 
-lp_UMDiffCommand cmd_buffer[CMD_BUFFER_SIZE];
+umdiff_Command cmd_buffer[CMD_BUFFER_SIZE];
 
-lp_UMDiffFile
+umdiff_File
 lp_PatchSet_open(const char *path)
 {
 
 }
 
 int
-lp_PatchSet_covered(lp_UMDiffCommand *ps, u32 offset)
+lp_PatchSet_covered(umdiff_Command *ps, u32 offset)
 {
 
 }

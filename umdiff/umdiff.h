@@ -25,16 +25,27 @@
  * Pointers spanning past the end of the disc are undefined and shall not be
  * used.
  */
-typedef long lp_UMDiffIndex[2048];
+typedef long umdiff_CmdIndex[1024];
 
+/**
+ * @brief      UMDiff file header structure.
+ *
+ * This is the format for a UMDiff file header. The commands index is included,
+ * as with the constrained memory of the PSP, reading the index in full is
+ * mandatory.
+ *
+ * With the tradeoff of an O(n) space and O(n) time conversion process on PC,
+ * we gain a worst-case patch application process in O(1) space and O(log(n))
+ * time on PSP.
+ */
 typedef struct 
 __attribute__((packed)) {
     char magic[7]; /* = 0x7f 'UMDiff' */
     char version;
     long cmd_len;
     long data_start;
-    lp_UMDiffIndex index;
-} lp_UMDiffHeader;
+    umdiff_CmdIndex index;
+} umdiff_Header;
 
 /**
  * @brief      Definition for a single patch command.
@@ -62,15 +73,15 @@ typedef struct {
     long patch_sector_count; /* if < sector_count, repeat */
 
     long data_source; /* 0 = patchfile, 1 = source */
-} lp_UMDiffCommand;
+} umdiff_Command;
 
 // Commands shall start immediately after the full header
 #define UMDIFF_COMMANDS_START (sizeof lp_UMDiffHeader)
 
 typedef struct {
-    lp_UMDiffHeader *hdr;
-    lp_UMDiffCommand *commands;
-} lp_UMDiffFile;
+    umdiff_Header *hdr;
+    umdiff_Command *commands;
+} umdiff_File;
 
 #endif //__UMDIFF_H
 
