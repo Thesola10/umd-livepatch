@@ -9,11 +9,25 @@
  * in the umd_livepatch module.
  */
 
+#include <fcntl.h>
+
 #include "usage.rl.h"
+#include "rdiff.h"
 
 int
 umdiff_delta(char *source, char *target, char *output)
 {
+    int source_fd, target_fd, output_fd;
+    umdiff_File *result;
+
+    source_fd = open(source, O_RDONLY);
+    target_fd = open(target, O_RDONLY);
+
+    result = umdiff_File_fromCompare(source_fd, target_fd);
+
+    output_fd = open(output, O_WRONLY|O_CREAT|O_TRUNC);
+    umdiff_File_write(result, output_fd);
+
     return 1;
 }
 

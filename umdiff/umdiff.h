@@ -10,7 +10,15 @@
  * This file contains all required types to read and parse a UMDiff file.
  */
 
-#define UMDIFF_VERSION 0x00
+#ifndef ISO_SECTOR_SIZE
+#  define ISO_SECTOR_SIZE 2048
+#endif
+
+#define umdiff_File_$MAGIC "\x7fUMDiff"
+#define umdiff_File_$VERSION 0x00
+
+// Commands shall start immediately after the full header
+#define umdiff_File_$COMMANDS_START (sizeof lp_UMDiffHeader)
 
 /**
  * @brief      Index of commands at 1024 sector interval.
@@ -42,7 +50,7 @@ typedef struct
 __attribute__((packed)) {
     char magic[7]; /* = 0x7f 'UMDiff' */
     char version;
-    long cmd_len;
+    long cmd_count;
     long data_start;
     umdiff_CmdIndex index;
 } umdiff_Header;
@@ -58,7 +66,7 @@ __attribute__((packed)) {
  * - <tt>sector_count</tt>: How many sectors on the original disc the patch
  *   command spans.
  * - <tt>patch_start</tt>: Where in the patch source the substitute data is
- *   found, in sectors.
+ *   found, in sectors (past @ref data_start for in-file patches).
  * - <tt>patch_sector_count</tt>: How many sectors on the patch source the
  *   substitute data occupies. If smaller than <tt>sector_count</tt>, then
  *   the substitute is a repeating pattern of that length.
@@ -75,13 +83,63 @@ typedef struct {
     long data_source; /* 0 = patchfile, 1 = source */
 } umdiff_Command;
 
-// Commands shall start immediately after the full header
-#define UMDIFF_COMMANDS_START (sizeof lp_UMDiffHeader)
+/**
+ * @brief      Flags to control loading a UMDiff file.
+ *
+ * In order to adapt to memory-constrained environments, one can choose to
+ * not load certain parts of a UMDiff file, instead resorting to in-situ reads.
+ */
+typedef enum {
+    umdiff_FileFlags_HEADER_ONLY,
+    umdiff_FileFlags_HEADER_AND_COMMANDS,
+    umdiff_FileFlags_LOAD_FULL
+} umdiff_FileFlags;
 
+/**
+ * @brief      In-memory structure for a UMDiff file.
+ *
+ * This struct represents the contents of a UMDiff file, loaded in memory.
+ * If read from a file, only the header is guaranteed to be populated.
+ *
+ * @see umdiff_FileFlags for the possible cases.
+ */
 typedef struct {
-    umdiff_Header *hdr;
+    umdiff_Header hdr;
     umdiff_Command *commands;
+    long data_len;
+    char *data;
+    umdiff_FileFlags mode;
 } umdiff_File;
+
+/**
+ * @brief      Load a UMDiff file from an open file descriptor.
+ *
+ * This function takes a pre-allocated @ref umdiff_File structure, and populates
+ * it from an open file descriptor, according to the given mode flags.
+ *
+ * @param file     The target @ref umdiff_File to load into.
+ * @param fd       The open file descriptor to read from.
+ * @param flags    Flags to control how much data to read in memory.
+ *
+ * @return 0 on success, any other value indicates an error.
+ */
+int
+umdiff_File_load(umdiff_File *file, int fd, umdiff_FileFlags flags);
+
+/**
+ * @brief      Write a fully-populated UMDiff into a file descriptor.
+ *
+ * This function takes a fully populated @ref umdiff_File structure, and writes
+ * it down into an open file descriptor. The output header will be set with
+ * correct values, only cmd_len and index must both be set.
+ *
+ * @param file     The @ref umdiff_File to write from. Must be fully populated.
+ * @param outfd    The open file descriptor to write into.
+ *
+ * @return 0 on success, any other value indicates an error.
+ */
+int
+umdiff_File_write(umdiff_File *file, int outfd);
 
 #endif //__UMDIFF_H
 

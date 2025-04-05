@@ -8,11 +8,9 @@
  * and convert it in-memory into the UMDiff format.
  */
 
-#include "umdiff.h"
+#include "rdiff.h"
 
 #include <librsync.h>
-
-#define ISO_SECTOR_SIZE 2048
 
 typedef union {
     int fd;
