@@ -100,12 +100,12 @@ int lp_discChangeWatcher(SceSize argc, void *argp)
     for (int i = 0; i < count; i++) {
         sceKernelReferCallbackStatus(callbacks[i], &cbinfo);
         if (!strcmp(cbinfo.name, "SceVshMediaDetectUMD")) {
-            Kprintf("Found VSH UMD callback: 0x%08x\n", vshCallbackId);
             vshCallbackId = callbacks[i];
+            Kprintf("Found VSH UMD callback: 0x%08x\n", vshCallbackId);
             break;
         } else if (!strcmp(cbinfo.name, "DVDUMD")) {
-            Kprintf("Found game UMD callback: 0x%08x\n", vshCallbackId);
             vshCallbackId = callbacks[i];
+            Kprintf("Found game UMD callback: 0x%08x\n", vshCallbackId);
             break;
         }
     }
