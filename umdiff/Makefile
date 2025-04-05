@@ -1,5 +1,5 @@
 TARGET = umdiff
-C_OBJS = main.c.o compare.c.o file.c.o patch.c.o
+C_OBJS = main.c.o rdiff.c.o compare.c.o file.c.o patch.c.o
 OBJS   = $(C_OBJS)
 
 CMAKE := cmake

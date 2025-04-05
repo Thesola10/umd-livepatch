@@ -6,6 +6,8 @@
  *
  * The functions defined here control reading and writing UMDiff files from
  * in-memory structure @ref umdiff_File.
+ *
+ * @warning This file is reused by umd_livepatch. Do not allocate on the heap!
  */
 
 #include "umdiff.h"
@@ -28,7 +30,7 @@ _impl_umdiff_Header_rectify(umdiff_Header *hdr)
     long len_preamble = sizeof(umdiff_Header)
                       + (sizeof(umdiff_Command) * hdr->cmd_count);
 
-    strncpy(hdr->magic, umdiff_File_$MAGIC, 7);
+    memcpy(hdr->magic, umdiff_File_$MAGIC, 7);
     hdr->version = umdiff_File_$VERSION;
     hdr->data_start = _impl_umdiff_alignSector$(len_preamble);
 }

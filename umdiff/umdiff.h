@@ -18,7 +18,7 @@
 #define umdiff_File_$VERSION 0x00
 
 // Commands shall start immediately after the full header
-#define umdiff_File_$COMMANDS_START (sizeof lp_UMDiffHeader)
+#define umdiff_File_$COMMANDS_START (sizeof(umdiff_Header))
 
 /**
  * @brief      Index of commands at 1024 sector interval.
@@ -46,7 +46,7 @@ typedef long umdiff_CmdIndex[1024];
  * we gain a worst-case patch application process in O(1) space and O(log(n))
  * time on PSP.
  */
-typedef struct 
+typedef struct
 __attribute__((packed)) {
     char magic[7]; /* = 0x7f 'UMDiff' */
     char version;
@@ -101,15 +101,39 @@ typedef enum {
  * This struct represents the contents of a UMDiff file, loaded in memory.
  * If read from a file, only the header is guaranteed to be populated.
  *
+ * If <tt>commands</tt> is set to point to a 1024-command buffer, and <tt>mode</tt>
+ * is set to @ref umdiff_FileFlags_HEADER_ONLY, it will be used as a holding
+ * buffer when reading commands from file.
+ *
  * @see umdiff_FileFlags for the possible cases.
  */
 typedef struct {
     umdiff_Header hdr;
+
+    /**
+     * @brief List of loaded commands from file
+     *
+     * If <tt>mode</tt> is set to @ref umdiff_FileFlags_HEADER_ONLY, this is
+     * expected to be a pre-allocated buffer holding 1024 commands.
+     * Otherwise, it contains all commands in the file.
+     */
     umdiff_Command *commands;
-    long data_len;
     char *data;
+    long data_len;
+
+    /** Keeps track of the last command batch pulled from index. */
+    int last_index;
+    /** Which loading mode was used when this file was opened. */
     umdiff_FileFlags mode;
 } umdiff_File;
+
+/**
+ * @brief      Callback function to read from a source.
+ *
+ * This is used by @ref umdiff_File_readPatched to perform an actual read from
+ * a data source, be it the patch file or original media.
+ */
+typedef int (*umdiff_ReadCallback)(void *dest, long count, long offset);
 
 /**
  * @brief      Load a UMDiff file from an open file descriptor.
@@ -140,6 +164,25 @@ umdiff_File_load(umdiff_File *file, int fd, umdiff_FileFlags flags);
  */
 int
 umdiff_File_write(umdiff_File *file, int outfd);
+
+/**
+ * @brief      Perform a read at a given offset and size with patches applied.
+ *
+ * This function maps a given read request into the patched data, using the
+ * provided callback functions to carry out the actual read commands needed.
+ *
+ * @param file             The @ref umdiff_File to perform the patch with.
+ * @param dest             Like pread(2), the buffer to write the data into.
+ * @param count            Like pread(2), the amount of data to read.
+ * @param offset           Like pread(2), the offset at which to start reading.
+ *
+ * @param read_source      The function to read the source media.
+ * @param read_patchFile   The function to read the patch file from storage.
+ */
+int
+umdiff_File_readPatched(umdiff_File *file, void *dest, long count, long offset,
+                        umdiff_ReadCallback read_source,
+                        umdiff_ReadCallback read_patchFile);
 
 #endif //__UMDIFF_H
 
