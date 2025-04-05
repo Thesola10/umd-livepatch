@@ -28,6 +28,9 @@ typedef union {
 
 rs_signature_t *workSignatures;
 
+char buf_next_in[BUFFERS_SIZE];
+char buf_next_out[BUFFERS_SIZE];
+
 size_t workSigs_counter = 0;
 size_t workSigs_size = 0;
 
@@ -35,16 +38,15 @@ rs_result
 _impl_umdiff_sigJobSink(rs_job_t *job, rs_buffers_t *buf, void *dest)
 {
     int res;
-    rs_signature_t *sigs = dest;
 
-    if (buf->avail_out + workSigs_counter > workSigs_size) {
-        sigs = realloc(sigs, workSigs_size + _impl_umdiff_alignBufferSize$(buf->avail_out));
+    if (BUFFERS_SIZE + workSigs_counter > workSigs_size) {
+        workSignatures = realloc(workSignatures, workSigs_size + _impl_umdiff_alignBufferSize$(buf->avail_out));
         workSigs_size += _impl_umdiff_alignBufferSize$(buf->avail_out);
     }
-    memcpy((char *) sigs + workSigs_counter, buf->next_out, buf->avail_out);
-    workSigs_counter += buf->avail_out;
+    workSigs_counter += BUFFERS_SIZE;
 
-    buf->avail_out = 0;
+    buf->avail_out = BUFFERS_SIZE;
+    buf->next_out = dest + workSigs_counter;
 
     return RS_DONE;
 }
@@ -55,6 +57,7 @@ _impl_umdiff_sigJobSource(rs_job_t *job, rs_buffers_t *buf, void *fd_)
     int res;
     _impl_umdiff_OpaqueFd fd = { .opaque = fd_ };
 
+    buf->next_in = buf_next_in;
     buf->avail_in = read(fd.fd, buf->next_in, BUFFERS_SIZE);
     if (!buf->avail_in)
         buf->eof_in = 1;
@@ -69,6 +72,9 @@ _impl_umdiff_deltaJobSink(rs_job_t *job, rs_buffers_t *buf, void *file_)
 
     //TODO: parse each command output
 
+    buf->next_out = buf_next_out;
+    buf->avail_out = BUFFERS_SIZE;
+
     return RS_DONE;
 }
 
@@ -78,6 +84,7 @@ _impl_umdiff_deltaJobSource(rs_job_t *job, rs_buffers_t *buf, void *fd_)
     int res;
     _impl_umdiff_OpaqueFd fd = { .opaque = fd_ };
 
+    buf->next_in = buf_next_in;
     buf->avail_in = read(fd.fd, buf->next_in, BUFFERS_SIZE);
     if (!buf->avail_in)
         buf->eof_in = 1;
@@ -97,8 +104,8 @@ umdiff_File_fromCompare(umdiff_File *file, int source_fd, int target_fd)
         .eof_in = 0,
         .avail_in = 0,
         .avail_out = 0,
-        .next_in = malloc(BUFFERS_SIZE),
-        .next_out = malloc(BUFFERS_SIZE)
+        .next_in = buf_next_in,
+        .next_out = buf_next_out
     };
 
     workSignatures = malloc(BUFFERS_SIZE);
