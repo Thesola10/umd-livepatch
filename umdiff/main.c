@@ -13,7 +13,7 @@
 #include <stdlib.h>
 
 #include "usage.rl.h"
-#include "rdiff.h"
+#include "compare.h"
 
 int
 umdiff_delta(char *source, char *target, char *output)
@@ -33,6 +33,7 @@ umdiff_delta(char *source, char *target, char *output)
 int
 umdiff_patch(char *source, char *umdiff, char *output)
 {
+
     return 1;
 }
 

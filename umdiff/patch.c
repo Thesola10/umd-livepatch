@@ -12,7 +12,11 @@
 
 #include "umdiff.h"
 
-static long
+#include <string.h>
+
+static umdiff_File *current_file;
+
+static int
 _impl_umdiff_Command_read(umdiff_Command cmd, void *dest, long count, long offset,
                           umdiff_ReadCallback read_source,
                           umdiff_ReadCallback read_patchFile)
@@ -48,16 +52,39 @@ _impl_umdiff_File_readIndexCmds(umdiff_File *file, long offset_sector,
     file->last_index = index;
 }
 
+/**
+ * Virtual read callback for @ref umdiff_File with @ref umdiff_FileFlags_LOAD_FULL.
+ *
+ * Automatically set by @ref umdiff_File_readPatched as needed.
+ */
+int
+_impl_umdiff_ReadCallback_fullFile(void *dest, long count, long offset)
+{
+    // Undo relative-to-absolute translation from _impl_umdiff_Command_read
+    long ds = current_file->hdr.data_start;
+    long real_offset = offset - ds;
+
+    memcpy(dest, current_file->data + real_offset, count);
+
+    return count;
+}
+
 int
 umdiff_File_readPatched(umdiff_File *file, void *dest, long count, long offset,
                         umdiff_ReadCallback read_source,
                         umdiff_ReadCallback read_patchFile)
 {
-    long res;
+    int res;
     umdiff_Command *commands;
     umdiff_Command *curCommand;
 
 #define $offset_sectors (offset / ISO_SECTOR_SIZE)
+
+    current_file = file;
+
+    if (file->mode == umdiff_FileFlags_LOAD_FULL) {
+        read_patchFile = _impl_umdiff_ReadCallback_fullFile;
+    }
 
     while (count > 0) {
         commands = _impl_umdiff_File_readIndexCmds(file, $offset_sectors,
