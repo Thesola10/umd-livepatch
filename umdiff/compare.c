@@ -86,12 +86,11 @@ _impl_umdiff_deltaJobSource(rs_job_t *job, rs_buffers_t *buf, void *fd_)
 }
 
 
-umdiff_File *
-umdiff_File_fromCompare(int source_fd, int target_fd)
+int
+umdiff_File_fromCompare(umdiff_File *file, int source_fd, int target_fd)
 {
     _impl_umdiff_OpaqueFd source_fd_ = { .fd = source_fd };
     _impl_umdiff_OpaqueFd target_fd_ = { .fd = target_fd };
-    umdiff_File *resultFile;
 
     rs_job_t *sigJob, *deltaJob;
     rs_buffers_t buffers = {
@@ -115,9 +114,9 @@ umdiff_File_fromCompare(int source_fd, int target_fd)
                 _impl_umdiff_sigJobSink,    workSignatures);
     rs_job_drive(deltaJob, &buffers,
                 _impl_umdiff_deltaJobSource, target_fd_.opaque,
-                _impl_umdiff_deltaJobSink,   resultFile);
+                _impl_umdiff_deltaJobSink,   file);
 
-    return resultFile;
+    return 0;
 }
 
 // vim: ft=c.doxygen

@@ -21,8 +21,8 @@
  * This is the optimum approach, as it includes our optimum parameters,
  * ensuring computed blocks line up with ISO9660 sectors.
  */
-umdiff_File *
-umdiff_File_fromCompare(int source_fd, int target_fd);
+int
+umdiff_File_fromCompare(umdiff_File *file, int source_fd, int target_fd);
 
 #endif //__COMPARE_H
 
