@@ -1,8 +1,8 @@
-#ifndef __RDIFF_H
-#define __RDIFF_H
+#ifndef __COMPARE_H
+#define __COMPARE_H
 
 /**
- * @file       rdiff.h
+ * @file       compare.h
  * @author     Karim Vergnes <me@thesola.io>
  * @copyright  GPLv2
  * @brief      rsync-based diff calculator functions
@@ -24,6 +24,6 @@
 umdiff_File *
 umdiff_File_fromCompare(int source_fd, int target_fd);
 
-#endif //__RDIFF_H
+#endif //__COMPARE_H
 
 // vim: ft=c.doxygen

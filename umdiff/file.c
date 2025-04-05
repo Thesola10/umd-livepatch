@@ -83,3 +83,5 @@ umdiff_File_write(umdiff_File *file, int outfd)
 
     return 0;
 }
+
+// vim: ft=c.doxygen

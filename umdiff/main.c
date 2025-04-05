@@ -10,6 +10,7 @@
  */
 
 #include <fcntl.h>
+#include <stdlib.h>
 
 #include "usage.rl.h"
 #include "rdiff.h"
@@ -18,17 +19,15 @@ int
 umdiff_delta(char *source, char *target, char *output)
 {
     int source_fd, target_fd, output_fd;
-    umdiff_File *result;
+    umdiff_File *result = malloc(sizeof(umdiff_File));
 
     source_fd = open(source, O_RDONLY);
     target_fd = open(target, O_RDONLY);
 
     result = umdiff_File_fromCompare(source_fd, target_fd);
 
-    output_fd = open(output, O_WRONLY|O_CREAT|O_TRUNC);
-    umdiff_File_write(result, output_fd);
-
-    return 1;
+    output_fd = open(output, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    return umdiff_File_write(result, output_fd);
 }
 
 int
