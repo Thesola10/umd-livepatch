@@ -1,5 +1,5 @@
 TARGET = umdiff
-C_OBJS = main.o rdiff.o
+C_OBJS = main.c.o rdiff.c.o file.c.o patch.c.o
 OBJS   = $(C_OBJS)
 
 CMAKE := cmake
@@ -23,6 +23,9 @@ usage.rl: USAGE
 
 %.rl.h: %.rl
 	$(RAGEL) $< -o $@
+
+%.c.o: %.c
+	$(CC) -c $< -o $@ $(CFLAGS)
 
 librsync:
 	git clone https://github.com/librsync/librsync
