@@ -13,6 +13,19 @@
 
 #include "umdiff.h"
 
+#include <stddef.h>
+
+/**
+ * @brief      Add commands from a rdiff stream.
+ *
+ * This function takes a buffer in the rdiff delta file format, and adds UMDiff
+ * commands matching the parsed rdiff commands to the specified file.
+ *
+ * As it is intended to be called repeatedly, it will statefully alter the
+ * provided @ref umdiff_File object as it goes.
+ */
+int
+umdiff_File_feedCommands(umdiff_File *file, char *buf, size_t len);
 
 /**
  * @brief      Generate a UMDiff file from a source and target file contents.

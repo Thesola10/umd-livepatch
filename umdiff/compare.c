@@ -39,28 +39,20 @@ _impl_umdiff_sigJobSink(rs_job_t *job, rs_buffers_t *buf, void *dest)
 {
     int res;
 
+    if (!buf->next_out) {
+        buf->next_out = (char *) workSignatures;
+        buf->avail_out = workSigs_size;
+        return RS_DONE;
+    }
+
     if (BUFFERS_SIZE + workSigs_counter > workSigs_size) {
         workSignatures = realloc(workSignatures, workSigs_size + _impl_umdiff_alignBufferSize$(buf->avail_out));
         workSigs_size += _impl_umdiff_alignBufferSize$(buf->avail_out);
     }
     workSigs_counter += BUFFERS_SIZE;
 
-    buf->avail_out = BUFFERS_SIZE;
-    buf->next_out = dest + workSigs_counter;
-
-    return RS_DONE;
-}
-
-rs_result
-_impl_umdiff_sigJobSource(rs_job_t *job, rs_buffers_t *buf, void *fd_)
-{
-    int res;
-    _impl_umdiff_OpaqueFd fd = { .opaque = fd_ };
-
-    buf->next_in = buf_next_in;
-    buf->avail_in = read(fd.fd, buf->next_in, BUFFERS_SIZE);
-    if (!buf->avail_in)
-        buf->eof_in = 1;
+    buf->avail_out = workSigs_size - workSigs_counter;
+    //buf->next_out = dest + workSigs_counter;
 
     return RS_DONE;
 }
@@ -69,8 +61,10 @@ rs_result
 _impl_umdiff_deltaJobSink(rs_job_t *job, rs_buffers_t *buf, void *file_)
 {
     umdiff_File *file = file_;
+    size_t output_size = buf->next_out - buf_next_out;
 
-    //TODO: parse each command output
+    if (buf->next_out)
+        umdiff_File_feedCommands(file, buf->next_out, output_size);
 
     buf->next_out = buf_next_out;
     buf->avail_out = BUFFERS_SIZE;
@@ -79,15 +73,17 @@ _impl_umdiff_deltaJobSink(rs_job_t *job, rs_buffers_t *buf, void *file_)
 }
 
 rs_result
-_impl_umdiff_deltaJobSource(rs_job_t *job, rs_buffers_t *buf, void *fd_)
+_impl_umdiff_fileJobSource(rs_job_t *job, rs_buffers_t *buf, void *fd_)
 {
     int res;
     _impl_umdiff_OpaqueFd fd = { .opaque = fd_ };
 
     buf->next_in = buf_next_in;
     buf->avail_in = read(fd.fd, buf->next_in, BUFFERS_SIZE);
-    if (!buf->avail_in)
+    if (!buf->avail_in) {
         buf->eof_in = 1;
+        return RS_INPUT_ENDED;
+    }
 
     return RS_DONE;
 }
@@ -104,8 +100,8 @@ umdiff_File_fromCompare(umdiff_File *file, int source_fd, int target_fd)
         .eof_in = 0,
         .avail_in = 0,
         .avail_out = 0,
-        .next_in = buf_next_in,
-        .next_out = buf_next_out
+        .next_in = NULL,
+        .next_out = NULL
     };
 
     workSignatures = malloc(BUFFERS_SIZE);
@@ -117,11 +113,20 @@ umdiff_File_fromCompare(umdiff_File *file, int source_fd, int target_fd)
     deltaJob = rs_delta_begin(workSignatures);
 
     rs_job_drive(sigJob, &buffers,
-                _impl_umdiff_sigJobSource,  source_fd_.opaque,
+                _impl_umdiff_fileJobSource, source_fd_.opaque,
                 _impl_umdiff_sigJobSink,    workSignatures);
+    buffers = (rs_buffers_t) {
+        .eof_in = 0,
+        .avail_in = 0,
+        .avail_out = 0,
+        .next_in = NULL,
+        .next_out = NULL
+    };
     rs_job_drive(deltaJob, &buffers,
-                _impl_umdiff_deltaJobSource, target_fd_.opaque,
-                _impl_umdiff_deltaJobSink,   file);
+                _impl_umdiff_fileJobSource, target_fd_.opaque,
+                _impl_umdiff_deltaJobSink,  file);
+
+    free(workSignatures);
 
     return 0;
 }
