@@ -2,9 +2,21 @@ umdiff - Generate patch files for use with umd-livepatch
 
 Usage:
   umdiff delta <source_file> <target_file> <output_file>
-  umdiff patch <source_file> <umdiff_file> <output_file>
+  umdiff patch [--load-mode MODE] <source_file> <umdiff_file> <output_file>
   umdiff from-rdiff <rdiff_file> <output_file>
   umdiff --help
 
 Options:
-  -h --help  Prints a short usage summary.
+  --load-mode=MODE  How to load the UMDiff file into memory [default: 0]
+                    0: Load the file header into memory, read the rest ad-hoc
+                    1: Load all commands into memory, read patch data ad-hoc
+                    2: Load everything into memory
+  -h --help         Show this message and exit
+
+Commands:
+  delta             Generate a UMDiff file from the delta between source_file
+                    and target_file, and write it to output_file.
+  patch             Patch source_file using umdiff_file, and write the result
+                    to output_file.
+  from-rdiff        Convert an existing rdiff delta in rdiff_file into a
+                    UMDiff file, and write it to output_file.

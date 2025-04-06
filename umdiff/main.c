@@ -31,8 +31,9 @@ umdiff_delta(char *source, char *target, char *output)
 }
 
 int
-umdiff_patch(char *source, char *umdiff, char *output)
+umdiff_patch(char *source, char *umdiff, char *output, char *load_mode)
 {
+    umdiff_FileFlags lmode = atoi(load_mode);
     return 1;
 }
 
@@ -59,7 +60,8 @@ int main(int argc, char *argv[])
     if (opts.delta)
         return umdiff_delta(opts.source_file, opts.target_file, opts.output_file);
     else if (opts.patch)
-        return umdiff_patch(opts.source_file, opts.umdiff_file, opts.output_file);
+        return umdiff_patch(opts.source_file, opts.umdiff_file, opts.output_file,
+                            opts.loadmode);
     else if (opts.fromrdiff)
         return umdiff_fromRdiff(opts.rdiff_file, opts.output_file);
 

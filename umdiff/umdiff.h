@@ -90,9 +90,9 @@ typedef struct {
  * not load certain parts of a UMDiff file, instead resorting to in-situ reads.
  */
 typedef enum {
-    umdiff_FileFlags_HEADER_ONLY,
-    umdiff_FileFlags_HEADER_AND_COMMANDS,
-    umdiff_FileFlags_LOAD_FULL
+    umdiff_FileFlags_HEADER_ONLY         = 0,
+    umdiff_FileFlags_HEADER_AND_COMMANDS = 1,
+    umdiff_FileFlags_LOAD_FULL           = 2
 } umdiff_FileFlags;
 
 /**
