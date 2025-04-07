@@ -13,26 +13,120 @@
 #include <librsync.h>
 #include <prototab.h>
 #include <stddef.h>
+#include <string.h>
+#include <stdlib.h>
+
+typedef struct {
+    enum rs_op_kind kind;
+
+    uint64_t len;
+    uint64_t copy_offset;
+} _impl_umdiff_RdiffCommand;
+
+static size_t
+_impl_umdiff_RdiffCommand_parse(_impl_umdiff_RdiffCommand *cmd, char *buf, size_t len)
+{
+    rs_prototab_ent_t entry = rs_prototab[*buf];
+    *cmd = (_impl_umdiff_RdiffCommand) {
+        .kind = entry.kind,
+        .len = entry.immediate,
+        .copy_offset = 0
+    };
+
+    if (entry.kind == RS_KIND_LITERAL && entry.immediate)
+        return 1;
+
+    memcpy(&cmd->len, buf+1, entry.len_1);
+
+    if (entry.kind == RS_KIND_COPY) {
+        memcpy(&cmd->copy_offset, buf+1, entry.len_1);
+        memcpy(&cmd->len, buf+entry.len_1+1, entry.len_2);
+        return entry.len_1 + entry.len_2 + 1;
+    } else {
+        memcpy(&cmd->len, buf+1, entry.len_1);
+        return entry.len_1 + 1;
+    }
+}
+
+int
+_impl_umdiff_File_feedData(umdiff_File *file, char *buf, size_t len)
+{
+#define _impl_umdiff_Command_bytesLeft$(x) \
+    ((x->patch_start + x->patch_sector_count) * ISO_SECTOR_SIZE - file->data_len)
+
+    umdiff_Command *lastCommand = &file->commands[file->hdr.cmd_count - 1];
+    size_t bytesLeft = _impl_umdiff_Command_bytesLeft$(lastCommand);
+
+    if (bytesLeft > len) {
+        memcpy(file->data + file->data_len, buf, len);
+        file->data_len += len;
+
+        return len;
+    } else {
+        memcpy(file->data + file->data_len, buf, bytesLeft);
+        file->data_len += bytesLeft;
+
+        return bytesLeft;
+    }
+}
 
 int
 umdiff_File_feedCommands(umdiff_File *file, char *buf, size_t len)
 {
-    umdiff_Command *lastCommand;
+    umdiff_Command *lastCommand, *newCommand;
+    _impl_umdiff_RdiffCommand rdiffCommand;
 
-    //TODO:
-    // 1. skip magic number
+    int ret, progress = 0;
+
     if (file->hdr.cmd_count == 0 && file->data_len == 0
             && (int) *buf == RS_DELTA_MAGIC) {
         buf += sizeof RS_DELTA_MAGIC;
         len -= sizeof RS_DELTA_MAGIC;
     }
 
+#define _impl_umdiff_Command_isUnfinished$(x) \
+    (x->data_source == 0 \
+        && (x->patch_start + x->patch_sector_count) > (file->data_len / ISO_SECTOR_SIZE))
+
     if (file->hdr.cmd_count > 0)
         lastCommand = &file->commands[file->hdr.cmd_count - 1];
 
-    // 2. Update cmd_len on new command
-    // 3. Update data_len otherwise
-    // 4. If data_len < last command's patch area: complete data
+    while (len) {
+        if (_impl_umdiff_Command_isUnfinished$(lastCommand)) {
+            ret = _impl_umdiff_File_feedData(file, buf, len);
+            buf += ret;
+            len -= ret;
+            progress += ret;
+
+            if (len <= 0) break;
+        }
+
+        ret = _impl_umdiff_RdiffCommand_parse(&rdiffCommand, buf, len);
+        len -= ret;
+        buf += ret;
+        progress += ret;
+
+        if (rdiffCommand.len % ISO_SECTOR_SIZE
+                || rdiffCommand.copy_offset % ISO_SECTOR_SIZE) {
+            dprintf(1, "Misaligned command!\n");
+            exit(4);
+        }
+
+        newCommand = &file->commands[file->hdr.cmd_count];
+        file->hdr.cmd_count += 1;
+
+        newCommand->data_source = (rdiffCommand.kind == RS_KIND_COPY);
+        newCommand->sector_start = lastCommand->sector_start + lastCommand->sector_count;
+        newCommand->sector_count = rdiffCommand.len / ISO_SECTOR_SIZE;
+        newCommand->patch_sector_count = rdiffCommand.len / ISO_SECTOR_SIZE;
+        newCommand->patch_start = (rdiffCommand.kind == RS_KIND_COPY)
+            ? (rdiffCommand.copy_offset / ISO_SECTOR_SIZE)
+            : (file->data_len / ISO_SECTOR_SIZE);
+
+        lastCommand = newCommand;
+    }
+
+    return progress;
 }
 
 // vim: ft=c.doxygen
