@@ -8,7 +8,10 @@ DOCOPT2RAGEL := docopt2ragel
 
 LIBRSYNC_SOURCE := librsync
 
-ifeq (,$(wildcard /usr/lib*/librsync.*))
+ifneq (,${LIBRSYNC_LIBS})
+	CFLAGS += ${LIBRSYNC_CFLAGS}
+	LIBS += ${LIBRSYNC_LIBS}
+else ifeq (,$(wildcard /usr/lib*/librsync.*))
 	CFLAGS += -I$(LIBRSYNC_SOURCE)/src
 	OBJS += librsync.a
 else
