@@ -115,6 +115,7 @@ umdiff_File_fromCompare(umdiff_File *file, int source_fd, int target_fd)
     rs_job_drive(sigJob, &buffers,
                 _impl_umdiff_fileJobSource, source_fd_.opaque,
                 _impl_umdiff_sigJobSink,    workSignatures);
+    dprintf(1, "Extracted signatures.\n");
     buffers = (rs_buffers_t) {
         .eof_in = 0,
         .avail_in = 0,
@@ -125,6 +126,7 @@ umdiff_File_fromCompare(umdiff_File *file, int source_fd, int target_fd)
     rs_job_drive(deltaJob, &buffers,
                 _impl_umdiff_fileJobSource, target_fd_.opaque,
                 _impl_umdiff_deltaJobSink,  file);
+    dprintf(1, "Generated deltas.\n");
 
     free(workSignatures);
 

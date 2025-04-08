@@ -11,6 +11,7 @@
 
 #include <fcntl.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "usage.rl.h"
 #include "compare.h"
@@ -19,10 +20,22 @@ int
 umdiff_delta(char *source, char *target, char *output)
 {
     int source_fd, target_fd, output_fd;
+    size_t tgt_sz;
     umdiff_File result;
 
     source_fd = open(source, O_RDONLY);
     target_fd = open(target, O_RDONLY);
+
+    tgt_sz = lseek(target_fd, 0, SEEK_END);
+    lseek(target_fd, 0, SEEK_SET);
+
+    // Naive worst case alloc
+    //TODO: Use progressive block-based reallocs instead
+    result.commands = malloc(sizeof(umdiff_Command) * (tgt_sz / ISO_SECTOR_SIZE));
+    result.data = malloc(tgt_sz);
+    result.mode = umdiff_FileFlags_LOAD_FULL;
+    result.data_len = 0;
+    result.hdr.cmd_count = 0;
 
     umdiff_File_fromCompare(&result, source_fd, target_fd);
 

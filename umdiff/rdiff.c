@@ -15,6 +15,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
+#include <arpa/inet.h>
 
 typedef struct {
     enum rs_op_kind kind;
@@ -40,7 +41,23 @@ _impl_umdiff_RdiffCommand_parse(_impl_umdiff_RdiffCommand *cmd, char *buf, size_
 
     if (entry.kind == RS_KIND_COPY) {
         memcpy(&cmd->copy_offset, buf+1, entry.len_1);
+        switch (entry.len_1) {
+        case 2:
+            cmd->copy_offset = be16toh(cmd->copy_offset); break;
+        case 4:
+            cmd->copy_offset = be32toh(cmd->copy_offset); break;
+        case 8:
+            cmd->copy_offset = be64toh(cmd->copy_offset); break;
+        }
         memcpy(&cmd->len, buf+entry.len_1+1, entry.len_2);
+        switch (entry.len_2) {
+        case 2:
+            cmd->len = be16toh(cmd->len); break;
+        case 4:
+            cmd->len = be32toh(cmd->len); break;
+        case 8:
+            cmd->len = be64toh(cmd->len); break;
+        }
         return entry.len_1 + entry.len_2 + 1;
     } else {
         memcpy(&cmd->len, buf+1, entry.len_1);
@@ -73,13 +90,14 @@ _impl_umdiff_File_feedData(umdiff_File *file, char *buf, size_t len)
 int
 umdiff_File_feedCommands(umdiff_File *file, char *buf, size_t len)
 {
-    umdiff_Command *lastCommand, *newCommand;
+    umdiff_Command *lastCommand = NULL, *newCommand;
     _impl_umdiff_RdiffCommand rdiffCommand;
 
     int ret, progress = 0;
 
     if (file->hdr.cmd_count == 0 && file->data_len == 0
-            && (int) *buf == RS_DELTA_MAGIC) {
+            && (int) *buf == htobe32(RS_DELTA_MAGIC)) {
+        dprintf(1, "Encountered magic");
         buf += sizeof RS_DELTA_MAGIC;
         len -= sizeof RS_DELTA_MAGIC;
     }
@@ -89,10 +107,10 @@ umdiff_File_feedCommands(umdiff_File *file, char *buf, size_t len)
         && (x->patch_start + x->patch_sector_count) > (file->data_len / ISO_SECTOR_SIZE))
 
     if (file->hdr.cmd_count > 0)
-        lastCommand = &file->commands[file->hdr.cmd_count - 1];
+        lastCommand = &(file->commands[file->hdr.cmd_count - 1]);
 
     while (len) {
-        if (_impl_umdiff_Command_isUnfinished$(lastCommand)) {
+        if (lastCommand && _impl_umdiff_Command_isUnfinished$(lastCommand)) {
             ret = _impl_umdiff_File_feedData(file, buf, len);
             buf += ret;
             len -= ret;
@@ -106,9 +124,11 @@ umdiff_File_feedCommands(umdiff_File *file, char *buf, size_t len)
         buf += ret;
         progress += ret;
 
+        dprintf(1, "Length: %ld, offset: %ld\n", rdiffCommand.len, rdiffCommand.copy_offset);
+
         if (rdiffCommand.len % ISO_SECTOR_SIZE
                 || rdiffCommand.copy_offset % ISO_SECTOR_SIZE) {
-            dprintf(1, "Misaligned command!\n");
+            dprintf(1, "Misaligned command! Length %ld, offset %ld\n", rdiffCommand.len, rdiffCommand.copy_offset);
             exit(4);
         }
 
@@ -116,7 +136,9 @@ umdiff_File_feedCommands(umdiff_File *file, char *buf, size_t len)
         file->hdr.cmd_count += 1;
 
         newCommand->data_source = (rdiffCommand.kind == RS_KIND_COPY);
-        newCommand->sector_start = lastCommand->sector_start + lastCommand->sector_count;
+        newCommand->sector_start = lastCommand
+            ? lastCommand->sector_start + lastCommand->sector_count
+            : 0;
         newCommand->sector_count = rdiffCommand.len / ISO_SECTOR_SIZE;
         newCommand->patch_sector_count = rdiffCommand.len / ISO_SECTOR_SIZE;
         newCommand->patch_start = (rdiffCommand.kind == RS_KIND_COPY)

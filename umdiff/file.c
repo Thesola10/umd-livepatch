@@ -69,10 +69,19 @@ umdiff_File_write(umdiff_File *file, int outfd)
     _impl_umdiff_RawHeader rheader;
     int ret;
 
-    if (!file || file->mode != umdiff_FileFlags_LOAD_FULL
-              || !file->commands || !file->data
-              || !file->hdr.cmd_count || !file->hdr.index[0])
+    if (!file || file->mode != umdiff_FileFlags_LOAD_FULL) {
+        dprintf(1, "File object is in incomplete mode. Cannot proceed.\n");
         return 1;
+    } else if (!file->commands || !file->data) {
+        dprintf(1, "File object is missing commands or data buffer. Cannot proceed.\n");
+        return 1;
+    } else if (!file->hdr.cmd_count) {
+        dprintf(1, "File object has zero commands. Cannot proceed.\n");
+        return 1;
+    } else if (!file->hdr.index[0]) {
+        dprintf(1, "File object has an empty index.\n");
+        //return 1;
+    }
 
     rheader.hdr = file->hdr;
 
